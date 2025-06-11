@@ -1,0 +1,22 @@
+[
+    {
+        "classId": 1,
+        "gradeYear": 1,
+        "headTeacherId": 1
+    },
+    {
+        "classId": 2,
+        "gradeYear": 2,
+        "headTeacherId": 7
+    },
+    {
+        "classId": 3,
+        "gradeYear": 3,
+        "headTeacherId": 13
+    },
+    {
+        "classId": 4,
+        "gradeYear": 4,
+        "headTeacherId": 20
+    }
+]

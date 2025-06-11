@@ -1,0 +1,164 @@
+[
+    {
+        "id": 1,
+        "name": "Bulgarian Language and Literature",
+        "order": 1,
+        "grade": 1
+    },
+    {
+        "id": 2,
+        "name": "Mathematics",
+        "order": 2,
+        "grade": 1
+    },
+    {
+        "id": 3,
+        "name": "Nature and Environment",
+        "order": 3,
+        "grade": 1
+    },
+    {
+        "id": 4,
+        "name": "Art",
+        "order": 4,
+        "grade": 1
+    },
+    {
+        "id": 5,
+        "name": "Music",
+        "order": 5,
+        "grade": 1
+    },
+    {
+        "id": 6,
+        "name": "Physical Education",
+        "order": 6,
+        "grade": 1
+    },
+    {
+        "id": 7,
+        "name": "Bulgarian Language and Literature",
+        "order": 7,
+        "grade": 2
+    },
+    {
+        "id": 8,
+        "name": "Mathematics",
+        "order": 8,
+        "grade": 2
+    },
+    {
+        "id": 9,
+        "name": "Nature and Environment",
+        "order": 9,
+        "grade": 2
+    },
+    {
+        "id": 10,
+        "name": "Art",
+        "order": 10,
+        "grade": 2
+    },
+    {
+        "id": 11,
+        "name": "Music",
+        "order": 11,
+        "grade": 2
+    },
+    {
+        "id": 12,
+        "name": "Physical Education",
+        "order": 12,
+        "grade": 2
+    },
+    {
+        "id": 13,
+        "name": "Bulgarian Language and Literature",
+        "order": 13,
+        "grade": 3
+    },
+    {
+        "id": 14,
+        "name": "Mathematics",
+        "order": 14,
+        "grade": 3
+    },
+    {
+        "id": 15,
+        "name": "Geography",
+        "order": 15,
+        "grade": 3
+    },
+    {
+        "id": 16,
+        "name": "History",
+        "order": 16,
+        "grade": 3
+    },
+    {
+        "id": 17,
+        "name": "Natural Sciences",
+        "order": 17,
+        "grade": 3
+    },
+    {
+        "id": 18,
+        "name": "Art",
+        "order": 18,
+        "grade": 3
+    },
+    {
+        "id": 19,
+        "name": "Physical Education",
+        "order": 19,
+        "grade": 3
+    },
+    {
+        "id": 20,
+        "name": "Bulgarian Language and Literature",
+        "order": 20,
+        "grade": 4
+    },
+    {
+        "id": 21,
+        "name": "Mathematics",
+        "order": 21,
+        "grade": 4
+    },
+    {
+        "id": 22,
+        "name": "Geography",
+        "order": 22,
+        "grade": 4
+    },
+    {
+        "id": 23,
+        "name": "History",
+        "order": 23,
+        "grade": 4
+    },
+    {
+        "id": 24,
+        "name": "Natural Sciences",
+        "order": 24,
+        "grade": 4
+    },
+    {
+        "id": 25,
+        "name": "Art",
+        "order": 25,
+        "grade": 4
+    },
+    {
+        "id": 26,
+        "name": "Music",
+        "order": 26,
+        "grade": 4
+    },
+    {
+        "id": 27,
+        "name": "Physical Education",
+        "order": 27,
+        "grade": 4
+    }
+]

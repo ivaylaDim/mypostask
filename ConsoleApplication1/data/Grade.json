@@ -1,0 +1,27 @@
+[
+	{
+		"id": 1,
+		"name": "Excellent",
+		"value": 6
+	},
+	{
+		"id": 2,
+		"name": "Very Good",
+		"value": 5
+	},
+	{
+		"id": 3,
+		"name": "Good",
+		"value": 4
+	},
+	{
+		"id": 4,
+		"name": "Sufficient",
+		"value": 3
+	},
+	{
+		"id": 5,
+		"name": "Insufficient",
+		"value": 2
+	}
+]

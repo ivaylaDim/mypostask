@@ -72,7 +72,7 @@ public:
     int headTeacher;
 };
 
-//declaring functions
+//declaring functions (some work without being declared above main but im not risking it)
 
 //main menu actions
 void showStudentMenu();
@@ -87,6 +87,10 @@ int editStudent(int studentId, const Student& updatedStudent);
 int deleteStudent(int studentId);
 tm parseDate(const string& dateStr);
 string formatDate(const tm& date);
+//helper functions for grade actions
+string getGradeName(int gradeId);
+string getSubjectName(int subjectId);
+pair<string, string> getTeacherInfo(int teacherId);
 //grade actions
 vector<StudentGrade> getAllStudentGrades();
 int readStudentGrades();
@@ -210,7 +214,7 @@ void showStudentMenu() {
                 cin >> id;
                 cin.ignore();
 
-                // Find existing student first to show current values
+                // find existing student to show current values
                 vector<Student> students = getAllStudents();
                 auto it = find_if(students.begin(), students.end(),
                     [id](const Student& s) { return s.id == id; });
@@ -306,13 +310,13 @@ void showGradeMenu() {
                 cout << "Enter student ID: ";
                 cin >> newStudentGrade.studentID;
 
-                cout << "Enter grade ID: ";
+                cout << "Enter grade ID (0-4 where 0 is 2 and 4 is 6): ";
                 cin >> newStudentGrade.gradeID;
 
-                cout << "Enter subject ID: ";
+                cout << "Enter subject ID (1-6 grade 1, 7-12 grade 2, 13-19 grade 3, 20-27 grade 4): ";
                 cin >> newStudentGrade.subjectID;
 
-                cout << "Enter teacher ID: ";
+                cout << "Enter teacher ID: "; //automate to match through subject file
                 cin >> newStudentGrade.teacherID;
                 cin.ignore();
 
@@ -747,6 +751,109 @@ int deleteStudent(int studentId) {
 }
 
 
+//helper functions for grade actions
+//get grade by id
+string getGradeName(int gradeId) {
+    ifstream input_file(GRADE_FILE);
+    if (!input_file.is_open()) {
+        return "Unknown";
+    }
+
+    try {
+        json grades_json;
+        input_file >> grades_json;
+        input_file.close();
+
+        for (const auto& item : grades_json) {
+            // The key is "id" in the Grade.json file - this one is correct!
+            if (item.contains("id") && item["id"] == gradeId) {
+                return item.contains("name") ? item["name"].get<string>() : "Unknown";
+            }
+        }
+    }
+    catch (const exception& e) {
+        input_file.close();
+    }
+    return "Unknown";
+}
+
+//get subject name by id
+string getSubjectName(int subjectId) {
+    ifstream input_file(SUBJECT_FILE);
+    if (!input_file.is_open()) {
+        return "Unknown Subject";
+    }
+
+    try {
+        json subjects_json;
+        input_file >> subjects_json;
+        input_file.close();
+        //FIXED DONT TOUCH
+        for (const auto& item : subjects_json) {
+            if (item.contains("id") && item["id"] == subjectId) {
+                return item.contains("name") ? item["name"].get<string>() : "Unknown Subject";
+            }
+        }
+    }
+    catch (const exception& e) {
+        input_file.close();
+    }
+    return "Unknown Subject";
+}
+
+// get teacher first and last names by id
+pair<string, string> getTeacherInfo(int teacherId) {
+    ifstream input_file(TEACHER_FILE);
+    if (!input_file.is_open()) {
+        return { "Unknown", "Teacher" };
+    }
+
+    try {
+        json teachers_json;
+        input_file >> teachers_json;
+        input_file.close();
+
+        for (const auto& item : teachers_json) {
+            //FIXED ALSO 
+            if (item.contains("id") && item["id"] == teacherId) {
+                return {
+                    item.contains("firstName") ? item["firstName"].get<string>() : "Unknown",
+                    item.contains("lastName") ? item["lastName"].get<string>() : "Teacher"
+                };
+            }
+        }
+    }
+    catch (const exception& e) {
+        input_file.close();
+    }
+    return { "Unknown", "Teacher" };
+}
+
+
+//get student name by id
+pair<string, string> getStudentInfo(int studentId) {
+    ifstream input_file(STUDENT_FILE);
+    if (!input_file.is_open()) {
+        return { "Unknown", "Student" };
+    }
+
+    try {
+        json students_json;
+        input_file >> students_json;
+        input_file.close();
+
+        for (const auto& item : students_json) {
+            if (item["id"] == studentId) {
+                return { item["firstName"], item["lastName"] };
+            }
+        }
+    }
+    catch (const exception& e) {
+        input_file.close();
+    }
+    return { "Unknown", "Student" };
+}
+
 //student grades actions
 vector<StudentGrade> getAllStudentGrades() {
     vector<StudentGrade> studentGrades;
@@ -764,17 +871,16 @@ vector<StudentGrade> getAllStudentGrades() {
 
         for (const auto& item : studentGrades_json) {
             StudentGrade studentGrade;
-            studentGrade.studentID = item["studentId"];
-            studentGrade.gradeID = item["gradeId"];
-            studentGrade.subjectID = item["subjectId"];
-            studentGrade.teacherID = item["teacherId"];
-            studentGrade.gradeDate = parseDate(item["gradeDate"]);
+            studentGrade.studentID = item.contains("studentId") ? item["studentId"].get<int>() : 0;
+            studentGrade.gradeID = item.contains("gradeId") ? item["gradeId"].get<int>() : 0;
+            studentGrade.subjectID = item.contains("subjectId") ? item["subjectId"].get<int>() : 0;
+            studentGrade.teacherID = item.contains("teacherId") ? item["teacherId"].get<int>() : 0;
+            studentGrade.gradeDate = item.contains("gradeDate") ? parseDate(item["gradeDate"]) : parseDate("01/01/2000");
             studentGrades.push_back(studentGrade);
         }
     }
     catch (const exception& e) {
         cerr << "Error parsing JSON: " << e.what() << endl;
-        input_file.close();
     }
 
     return studentGrades;
@@ -786,28 +892,45 @@ int readStudentGrades() {
         return 1;
     }
 
-    cout << left << setw(15) << "StudentID"
-        << setw(15) << "GradeID" //working on binding to tables to extract the values instead of the ids
-        << setw(15) << "SubjectID"
-        << setw(15) << "TeacherID"
-        << setw(10) << "Date added" << endl;
-    cout << string(70, '-') << endl;
+    cout << left << setw(10) << "ID"
+        << setw(20) << "Student Name"
+        << setw(17) << "Grade"
+        << setw(35) << "Subject"
+        << setw(20) << "Teacher"
+        << setw(12) << "Date" << endl;
+    cout << string(114, '-') << endl;
 
     for (const auto& studentGrade : studentGrades) {
-        cout << left << setw(15) << studentGrade.studentID
-            << setw(15) << studentGrade.gradeID
-            << setw(15) << studentGrade.subjectID
-            << setw(15) << studentGrade.teacherID
-            << setw(10) << formatDate(studentGrade.gradeDate) << endl;
+        // get student id and name
+        auto studentInfo = getStudentInfo(studentGrade.studentID);
+        string studentName = studentInfo.first + " " + studentInfo.second;
+
+        // get grade 
+        string gradeName = getGradeName(studentGrade.gradeID);
+
+        // get subject
+        string subjectName = getSubjectName(studentGrade.subjectID);
+
+        // get teacher
+        auto teacherInfo = getTeacherInfo(studentGrade.teacherID);
+        string teacherName = teacherInfo.first + " " + teacherInfo.second;
+
+        cout << left << setw(10) << studentGrade.studentID
+            << setw(20) << studentName
+            << setw(17) << gradeName
+            << setw(35) << subjectName
+            << setw(20) << teacherName
+            << setw(12) << formatDate(studentGrade.gradeDate) << endl;
     }
 
     return 0;
 }
 
+
 int addStudentGrade(const StudentGrade& studentGrade) {
     vector<StudentGrade> studentGrades = getAllStudentGrades();
 
-    // check if this grade already exists for this student and subject BEFORE adding it
+    // check if this grade already exists
     for (const auto& sg : studentGrades) {
         if (sg.studentID == studentGrade.studentID &&
             sg.gradeID == studentGrade.gradeID &&

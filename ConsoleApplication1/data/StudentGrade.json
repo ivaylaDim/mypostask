@@ -1,7 +1,7 @@
 [
   {
     "gradeDate": "06/11/2025",
-    "gradeId": 5,
+    "gradeId": 4,
     "studentId": 1,
     "subjectId": 1,
     "teacherId": 2
@@ -15,9 +15,16 @@
   },
   {
     "gradeDate": "06/11/2025",
-    "gradeId": 5,
+    "gradeId": 4,
     "studentId": 102,
     "subjectId": 8,
     "teacherId": 12
+  },
+  {
+    "gradeDate": "06/12/2025",
+    "gradeId": 4,
+    "studentId": 102,
+    "subjectId": 3,
+    "teacherId": 7
   }
 ]

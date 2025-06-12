@@ -1076,10 +1076,10 @@ vector<Subject> getAllSubjects() {
 
         for (const auto& item : subjects_json) {
             Subject subject;
-            subject.subjectID = item["subjectId"];
-            subject.subjectName = item["subjectName"];
-            subject.teacherID = item["teacherId"];
-            subject.classYear = item["classYear"];
+            subject.subjectID = item.contains("id") ? item["id"].get<int>() : 0;
+            subject.subjectName = item.contains("name") ? item["name"].get<string>() : "";
+            subject.teacherID = item.contains("teacherId") ? item["teacherId"].get<int>() : 0;
+            subject.classYear = item.contains("grade") ? item["grade"].get<int>() : 0;
             subjects.push_back(subject);
         }
     }
@@ -1097,16 +1097,19 @@ int readSubjects() {
         return 1;
     }
 
-    cout << left << setw(10) << "SubjectID"
-        << setw(20) << "Subject Name"
-        << setw(12) << "TeacherID"
-        << setw(10) << "Class Year" << endl;
-    cout << string(52, '-') << endl;
+    cout << left << setw(10) << "ID"
+        << setw(35) << "Subject Name"
+        << setw(20) << "Teacher"
+        << setw(10) << "Grade" << endl;
+    cout << string(75, '-') << endl;
 
     for (const auto& subject : subjects) {
+        auto teacherInfo = getTeacherInfo(subject.teacherID);
+        string teacherName = teacherInfo.first + " " + teacherInfo.second;
+
         cout << left << setw(10) << subject.subjectID
-            << setw(20) << subject.subjectName
-            << setw(12) << subject.teacherID
+            << setw(35) << subject.subjectName
+            << setw(20) << teacherName
             << setw(10) << subject.classYear << endl;
     }
 
@@ -1130,10 +1133,10 @@ int addSubject(const Subject& subject) {
     json subjects_json = json::array();
     for (const auto& s : subjects) {
         json subject_json;
-        subject_json["subjectId"] = s.subjectID;
-        subject_json["subjectName"] = s.subjectName;
+        subject_json["id"] = s.subjectID;
+        subject_json["name"] = s.subjectName;
         subject_json["teacherId"] = s.teacherID;
-        subject_json["classYear"] = s.classYear;
+        subject_json["grade"] = s.classYear;
         subjects_json.push_back(subject_json);
     }
 
@@ -1172,10 +1175,10 @@ int editSubject(int subjectId, const Subject& updatedSubject) {
     json subjects_json = json::array();
     for (const auto& s : subjects) {
         json subject_json;
-        subject_json["subjectId"] = s.subjectID;
-        subject_json["subjectName"] = s.subjectName;
+        subject_json["id"] = s.subjectID;
+        subject_json["name"] = s.subjectName;
         subject_json["teacherId"] = s.teacherID;
-        subject_json["classYear"] = s.classYear;
+        subject_json["grade"] = s.classYear;
         subjects_json.push_back(subject_json);
     }
 
@@ -1210,10 +1213,10 @@ int deleteSubject(int subjectId) {
     json subjects_json = json::array();
     for (const auto& s : subjects) {
         json subject_json;
-        subject_json["subjectId"] = s.subjectID;
-        subject_json["subjectName"] = s.subjectName;
+        subject_json["id"] = s.subjectID;
+        subject_json["name"] = s.subjectName;
         subject_json["teacherId"] = s.teacherID;
-        subject_json["classYear"] = s.classYear;
+        subject_json["grade"] = s.classYear;
         subjects_json.push_back(subject_json);
     }
 

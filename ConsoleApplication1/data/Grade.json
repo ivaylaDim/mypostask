@@ -2,13 +2,13 @@
 	{
 		"id": 0,
 		"name": "Insufficient 2",
-		"value": 6
+		"value": 2
 	},
 	{
 		"id": 1,
 
 		"name": "Sufficient 3",
-		"value": 5
+		"value": 3
 	},
 	{
 		"id": 2,
@@ -18,11 +18,11 @@
 	{
 		"id": 3,
 		"name": "Very Good 5",
-		"value": 3
+		"value": 5
 	},
 	{
 		"id": 4,
 		"name": "Excellent 6",
-		"value": 2
+		"value": 6
 	}
 ]

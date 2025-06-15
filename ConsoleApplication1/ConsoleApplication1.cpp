@@ -104,7 +104,20 @@ int addSubject(const Subject& subject);
 int editSubject(int subjectId, const Subject& updatedSubject);
 int deleteSubject(int subjectId);
 //summaries actions
-//...
+//helper functions
+int getGradeValue(int gradeId);
+double calculateAVG(int studentId);
+double calculateAVGSubject(int studentId, int subjectId);
+bool hasBirthady(const tm& birthDate);
+
+
+
+int showAverageBySubject();
+int showAverageOverall();
+int showTopStudents();
+int showMakeupTakers();
+int showWeakStudents();
+int showBirthdays();
 
 int main() {
     cout << "Current working directory: " << _getcwd(NULL, 0) << endl; //debug
@@ -137,7 +150,7 @@ int main() {
                 showSubjectMenu();
                 continue;
             case 4:
-
+                showSummariesMenu();
                 continue;
             case 5:
                 cout << "Exiting the program." << endl;
@@ -465,7 +478,7 @@ void showSummariesMenu() {
     while (true)
     {
         cout << "######## SUMMARIES MENU ########\n" << endl;
-        cout << "1.AVG grade by Student and Subject.\n 2.AVG Grade for Student in all subjects.\n 3.Top students.\n 4.Students for makeup exams.\n 5.Weak students.\n 6. Birthdays today\n 7.Return.\n" << endl;
+        cout << " 1.AVG grade by Student and Subject.\n 2.AVG Grade for Student in all subjects.\n 3.Top students.\n 4.Students for makeup exams.\n 5.Weak students.\n 6.Birthdays today\n 7.Return.\n" << endl;
         int ch;
         try
         {
@@ -479,23 +492,23 @@ void showSummariesMenu() {
             switch (ch)
             {
             case 1:
-                // avg grade and subject
-                break;
+                showAverageBySubject();
+                continue;
             case 2:
-                // avg grade overall
-                break;
+                showAverageOverall();
+                continue;
             case 3:
                 // top students
-                break;
+                continue;
             case 4:
                 // makeup exams
-                break;
+                continue;
             case 5:
                 // weak students
-                break;
+                continue;
             case 6:
-                // birthdays
-                break;
+                showBirthdays();
+                continue;
             case 7:
                 // return
                 cout << "Returning..." << endl;
@@ -537,9 +550,9 @@ tm parseDate(const string& dateStr) {
     if (ss.fail()) {
         cout << "Failed to parse date: " << dateStr << endl;
         // return a default date if parsing fails
-        date.tm_year = 100; // year 2000
-        date.tm_mon = 0;    // january
-        date.tm_mday = 1;   // 1st
+        date.tm_year = 100;
+        date.tm_mon = 0;
+        date.tm_mday = 1;
     }
     return date;
 }
@@ -752,6 +765,7 @@ int deleteStudent(int studentId) {
 
 
 //helper functions for grade actions
+
 //get grade by id
 string getGradeName(int gradeId) {
     ifstream input_file(GRADE_FILE);
@@ -765,7 +779,6 @@ string getGradeName(int gradeId) {
         input_file.close();
 
         for (const auto& item : grades_json) {
-            // The key is "id" in the Grade.json file - this one is correct!
             if (item.contains("id") && item["id"] == gradeId) {
                 return item.contains("name") ? item["name"].get<string>() : "Unknown";
             }
@@ -1235,3 +1248,159 @@ int deleteSubject(int subjectId) {
 
 
 //summaries here..
+//helper functions
+
+//same as getName, but for value so we can calculate
+int getGradeValue(int gradeId) {
+    ifstream input_file(GRADE_FILE);
+    if (!input_file.is_open()) {
+        return 0;
+    }
+    try {
+        json grades_json;
+        input_file >> grades_json;
+        input_file.close();
+
+        for (const auto& item : grades_json) {
+            if (item.contains("id") && item["id"] == gradeId) {
+                return item.contains("value") ? item["value"].get<int>() : 0;
+            }
+        }
+    }
+    catch (const exception& e) {
+        input_file.close();
+    }
+    return 0;
+}
+//average grade in all subjects
+double calculateAVG(int studentId) {
+    vector<StudentGrade> studentGrades = getAllStudentGrades();
+    int sum = 0;
+    int count = 0;
+
+    for (const auto& grade : studentGrades) {
+        if (grade.studentID == studentId) {
+            int gradeValue = getGradeValue(grade.gradeID);
+            sum += gradeValue;
+            count++;
+        }
+    }
+    double averageGrade = 0.0;
+    if (count > 0) {
+        averageGrade = static_cast<double>(sum) / count; //convert int to double and divide
+    }
+
+    return averageGrade;
+}
+
+//average in one subject
+//same as above, but added clause for subject
+double calculateAVGSubject(int studentId, int subjectId) {
+    vector<StudentGrade> studentGrades = getAllStudentGrades();
+    int sum = 0;
+    int count = 0;
+
+    for (const auto& grade : studentGrades) {
+        if (grade.studentID == studentId && grade.subjectID == subjectId) {
+            int gradeValue = getGradeValue(grade.gradeID);
+            sum += gradeValue;
+            count++;
+        }
+    }
+    double averageGrade = 0.0;
+    if (count > 0) {
+        averageGrade = static_cast<double>(sum) / count; //convert int to double and divide
+    }
+
+    return averageGrade;
+}
+
+
+//birthday
+bool hasBirthady(const tm& birthDate) {
+    time_t now = time(0);
+    tm ltm;
+    localtime_s(&ltm, &now);  
+
+    return (ltm.tm_mon == birthDate.tm_mon &&
+        ltm.tm_mday == birthDate.tm_mday);
+}
+
+int showAverageBySubject() {
+    int studentId, subjectId;
+    cout << "\n###### Available Students ######" << endl;
+    readStudents();
+    cout << "\nEnter student ID (Available students above): ";
+    cin >> studentId;
+    cout << "\n###### Available Subjects ######" << endl;
+    readSubjects();
+    cout << "Enter subject ID (Available subjects above): ";
+    cin >> subjectId;
+
+    auto studentInfo = getStudentInfo(studentId);
+    string studentName = studentInfo.first + " " + studentInfo.second;
+    string subjectName = getSubjectName(subjectId);
+    double average = calculateAVGSubject(studentId, subjectId);
+
+    cout << "\n###### Average Grade ######" << endl;
+    if (average > 0.0) {
+        cout << "Student: " << studentName << " (ID: " << studentId << ")" << endl;
+        cout << "Subject: " << subjectName << " (ID: " << subjectId << ")" << endl;
+        cout << "Average Grade: " << fixed << setprecision(2) << average << endl; // two digits after floating point
+    }
+    else {
+        cout << "No grades found for student " << studentName
+            << " in subject " << subjectName << endl;
+    }
+    return 0;
+}
+int showAverageOverall() {
+    int studentId;
+    cout << "\n###### Available Students ######" << endl;
+    readStudents();
+    cout << "\nEnter student ID (Available students above):";
+    cin >> studentId;
+
+    auto studentInfo = getStudentInfo(studentId);
+    string studentName = studentInfo.first + " " + studentInfo.second;
+    double average = calculateAVG(studentId);
+
+    cout << "\n###### Average Grade ######" << endl;
+    if (average > 0.0) {
+        cout << "Student: " << studentName << " (ID: " << studentId << ")" << endl;
+        cout << "Average Grade: " << fixed << setprecision(2) << average << endl;
+    }
+    else {
+        cout << "No grades found for student " << studentName << endl;
+    }
+    return 0;
+}
+int showTopStudents() {
+    return 0;
+}
+int showMakeupTakers() {
+    return 0;
+}
+int showWeakStudents() {
+    return 0;
+}
+
+int showBirthdays() {
+    vector<Student> students = getAllStudents();
+    cout << "\n#### Birthdays today ####" << endl;
+
+    bool bday = false;
+    for (const auto& student : students) {
+        if (hasBirthady(student.date)) {
+            cout << student.firstName << " " << student.lastName
+                << " (" << formatDate(student.date) << ")" << endl;
+            bday = true;
+        }
+    }
+
+    if (!bday) {
+        cout << "No student birthdays today!" << endl;
+    }
+
+    return 0;
+}

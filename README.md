@@ -30,6 +30,14 @@
   <li>Windows operating system (uses <code>direct.h</code> for directory operations)</li>
 </ul>
 
+<h2>IMPORTANT</h2>
+  <p>If you get issues with finding the json.hpp file, follow these steps:</p>
+  <ul>
+    <li>1. Go to the project folder, right click on the "include" folder and copy it as a path.</li>
+    <li>2. Open the project, then in Project Solution Explorer, right click on the project and go to properties.</li>
+    <li>3. In properties, look for C/C++ > General > Additional Include Directories.</li>
+    <li>4. Paste to copied path and remove the quotes ("").</li>
+  </ul>
 
 <h2>Usage</h2>
 <p>The application provides a menu-driven interface with the following main options:</p>

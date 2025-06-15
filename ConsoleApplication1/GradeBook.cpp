@@ -7,6 +7,9 @@
 #include <sstream>
 #include <iomanip>
 #include <direct.h> //debug
+#include <map>
+#include <set>
+#include <algorithm>
 
 // I am aware the requirements specify only using standard libraries
 // ..but I tried and failed to connect the database to my project
@@ -90,12 +93,14 @@ string formatDate(const tm& date);
 //helper functions for grade actions
 string getGradeName(int gradeId);
 string getSubjectName(int subjectId);
+int getTeacherIdFromSubject(int subjectId);
 pair<string, string> getTeacherInfo(int teacherId);
 //grade actions
 vector<StudentGrade> getAllStudentGrades();
 int readStudentGrades();
 int addStudentGrade(const StudentGrade& studentGrade);
 int editStudentGrade(int studentId, int gradeId, int subjectId, const StudentGrade& updatedStudentGrade);
+int editStudentGradePrompt();
 int deleteStudentGrade(int studentId, int gradeId, int subjectId);
 //subject actions
 vector<Subject> getAllSubjects();
@@ -109,8 +114,6 @@ int getGradeValue(int gradeId);
 double calculateAVG(int studentId);
 double calculateAVGSubject(int studentId, int subjectId);
 bool hasBirthady(const tm& birthDate);
-
-
 
 int showAverageBySubject();
 int showAverageOverall();
@@ -222,8 +225,10 @@ void showStudentMenu() {
             }
             case 3:
             {
+                cout << "\n###### Available Students ######" << endl;
+                readStudents();
                 int id;
-                cout << "Enter student ID to edit: ";
+                cout << "Enter student ID to edit (Available student above): ";
                 cin >> id;
                 cin.ignore();
 
@@ -265,8 +270,10 @@ void showStudentMenu() {
             }
             case 4:
             {
+                cout << "\n###### Available Students ######" << endl;
+                readStudents();
                 int id;
-                cout << "Enter student ID to delete: ";
+                cout << "Enter student ID to delete (Available students above): ";
                 cin >> id;
 
                 char confirm;
@@ -283,7 +290,7 @@ void showStudentMenu() {
             }
             case 5:
                 cout << "Returning..." << endl;
-                break; // Exit the student menu
+                break;
             default:
                 cout << "Invalid choice. Please try again." << endl;
                 continue;
@@ -320,19 +327,19 @@ void showGradeMenu() {
             case 2:
             {
                 StudentGrade newStudentGrade;
-                cout << "Enter student ID: ";
+                cout << "\n###### Available Students ######" << endl;
+                readStudents();
+                cout << "Enter student ID (Available students above): ";
                 cin >> newStudentGrade.studentID;
 
                 cout << "Enter grade ID (0-4 where 0 is 2 and 4 is 6): ";
                 cin >> newStudentGrade.gradeID;
 
-                cout << "Enter subject ID (1-6 grade 1, 7-12 grade 2, 13-19 grade 3, 20-27 grade 4): ";
+                cout << "\n###### Available Subjects ######" << endl;
+                readSubjects();
+                cout << "Enter subject ID: ";
                 cin >> newStudentGrade.subjectID;
-
-                cout << "Enter teacher ID: "; //automate to match through subject file
-                cin >> newStudentGrade.teacherID;
                 cin.ignore();
-
                 string dateStr;
                 cout << "Enter grade date (MM/DD/YYYY): ";
                 getline(cin, dateStr);
@@ -342,13 +349,35 @@ void showGradeMenu() {
                 continue;
             }
             case 3:
-                // edit grades
+                editStudentGradePrompt();
                 continue;
             case 4:
-                // delete grades
-                continue;
+            {
+                int studentId, gradeId, subjectId;
+                cout << "\n###### Available Grades ######" << endl;
+                readStudentGrades();
+                cout << "Enter student ID (From the table above): ";
+                cin >> studentId;
+
+                cout << "Enter grade ID (0-4 where 0 is 2 and 4 is 6): ";
+                cin >> gradeId;
+
+                cout << "Enter subject ID (From the table above): ";
+                cin >> subjectId;
+
+                char confirm;
+                cout << "Are you sure you want to delete this grade? (y/n): ";
+                cin >> confirm;
+
+                if (confirm == 'y' || confirm == 'Y') {
+                    deleteStudentGrade(studentId, gradeId, subjectId);
+                }
+                else {
+                    cout << "Deletion cancelled." << endl;
+                }
+            }
+            continue;
             case 5:
-                // return
                 cout << "Returning..." << endl;
                 break;
             default:
@@ -405,12 +434,14 @@ void showSubjectMenu() {
             }
             case 3:
             {
+                cout << "\n###### Available Subjects ######" << endl;
+                readStudentGrades();
                 int id;
                 cout << "Enter subject ID to edit: ";
                 cin >> id;
                 cin.ignore();
 
-                // Find existing subject first to show current values
+                // find existing subject first to show current values
                 vector<Subject> subjects = getAllSubjects();
                 auto it = find_if(subjects.begin(), subjects.end(),
                     [id](const Subject& s) { return s.subjectID == id; });
@@ -440,6 +471,8 @@ void showSubjectMenu() {
             }
             case 4:
             {
+                cout << "\n###### Available Subjects ######" << endl;
+                readStudentGrades();
                 int id;
                 cout << "Enter subject ID to delete: ";
                 cin >> id;
@@ -457,7 +490,6 @@ void showSubjectMenu() {
                 continue;
             }
             case 5:
-                // return
                 cout << "Returning..." << endl;
                 break;
             default:
@@ -498,19 +530,18 @@ void showSummariesMenu() {
                 showAverageOverall();
                 continue;
             case 3:
-                // top students
+                showTopStudents();
                 continue;
             case 4:
-                // makeup exams
+                showMakeupTakers();
                 continue;
             case 5:
-                // weak students
+                showWeakStudents();
                 continue;
             case 6:
                 showBirthdays();
                 continue;
             case 7:
-                // return
                 cout << "Returning..." << endl;
                 break;
             default:
@@ -867,6 +898,33 @@ pair<string, string> getStudentInfo(int studentId) {
     return { "Unknown", "Student" };
 }
 
+//automatically tie teacher to subject
+int getTeacherIdFromSubject(int subjectId) {
+    ifstream input_file(SUBJECT_FILE);
+    if (!input_file.is_open()) {
+        cerr << "Could not open file " << SUBJECT_FILE << endl;
+        return 0;
+    }
+
+    try {
+        json subjects_json;
+        input_file >> subjects_json;
+        input_file.close();
+
+        for (const auto& item : subjects_json) {
+            if ((item.contains("subjectId") && item["subjectId"] == subjectId) ||
+                (item.contains("id") && item["id"] == subjectId)) {
+                return item.contains("teacherId") ? item["teacherId"].get<int>() : 0;
+            }
+        }
+    }
+    catch (const exception& e) {
+        cerr << "Error parsing JSON: " << e.what() << endl;
+        input_file.close();
+    }
+    return 0;
+}
+
 //student grades actions
 vector<StudentGrade> getAllStudentGrades() {
     vector<StudentGrade> studentGrades;
@@ -908,10 +966,11 @@ int readStudentGrades() {
     cout << left << setw(10) << "ID"
         << setw(20) << "Student Name"
         << setw(17) << "Grade"
+        << setw(5) << "ID"
         << setw(35) << "Subject"
         << setw(20) << "Teacher"
         << setw(12) << "Date" << endl;
-    cout << string(114, '-') << endl;
+    cout << string(119, '-') << endl;
 
     for (const auto& studentGrade : studentGrades) {
         // get student id and name
@@ -931,6 +990,7 @@ int readStudentGrades() {
         cout << left << setw(10) << studentGrade.studentID
             << setw(20) << studentName
             << setw(17) << gradeName
+            << setw(5) << studentGrade.subjectID
             << setw(35) << subjectName
             << setw(20) << teacherName
             << setw(12) << formatDate(studentGrade.gradeDate) << endl;
@@ -939,26 +999,35 @@ int readStudentGrades() {
     return 0;
 }
 
-
-int addStudentGrade(const StudentGrade& studentGrade) {
+int addStudentGrade(const StudentGrade& studentGradeInput) {
     vector<StudentGrade> studentGrades = getAllStudentGrades();
 
-    // check if this grade already exists
+    StudentGrade studentGrade = studentGradeInput;
+
+    // automatically bind teacher to subject
+    int teacherId = getTeacherIdFromSubject(studentGrade.subjectID);
+    if (teacherId > 0) {
+        studentGrade.teacherID = teacherId;
+    }
+    else {
+        cout << "Warning: Could not find teacher for subject ID " << studentGrade.subjectID << endl;
+    }
+
+    // check if grade exists
     for (const auto& sg : studentGrades) {
         if (sg.studentID == studentGrade.studentID &&
             sg.gradeID == studentGrade.gradeID &&
             sg.subjectID == studentGrade.subjectID) {
-            cout << "Error: Grade " << studentGrade.gradeID
-                << " already exists for student " << studentGrade.studentID
-                << " in subject " << studentGrade.subjectID << endl;
+
+            cout << "Error: Grade already exists for this student" << endl;
             return 1;
         }
     }
 
-    // add new student grade to the vector AFTER checking
+    // add new grade to the vector
     studentGrades.push_back(studentGrade);
 
-    // convert the vector to json
+    // convert the vector back to json and save to file
     json studentGrades_json = json::array();
     for (const auto& sg : studentGrades) {
         json studentGrade_json;
@@ -970,7 +1039,7 @@ int addStudentGrade(const StudentGrade& studentGrade) {
         studentGrades_json.push_back(studentGrade_json);
     }
 
-    // write the json back to file
+    // write to file
     ofstream output_file(STUDENT_GRADE_FILE);
     if (!output_file.is_open()) {
         cerr << "Could not open file for writing." << endl;
@@ -979,20 +1048,29 @@ int addStudentGrade(const StudentGrade& studentGrade) {
 
     output_file << setw(2) << studentGrades_json << endl;
     output_file.close();
+
     cout << "Student grade added successfully." << endl;
+
     return 0;
 }
-//WARNING!!!! all grade actions are in development and very user unfriendly. check files before adding grades.
+
 int editStudentGrade(int studentId, int gradeId, int subjectId, const StudentGrade& updatedStudentGrade) {
     vector<StudentGrade> studentGrades = getAllStudentGrades();
     bool found = false;
+
+    // automatically get teacher id
+    int teacherId = getTeacherIdFromSubject(subjectId);
+    if (teacherId == 0) {
+        cout << "Warning: Could not find teacher for subject ID " << subjectId << endl;
+        return 1;
+    }
 
     for (auto& sg : studentGrades) {
         if (sg.studentID == studentId &&
             sg.gradeID == gradeId &&
             sg.subjectID == subjectId) {
             sg.gradeID = updatedStudentGrade.gradeID;
-            sg.teacherID = updatedStudentGrade.teacherID;
+            sg.teacherID = teacherId;
             sg.gradeDate = updatedStudentGrade.gradeDate;
             found = true;
             break;
@@ -1004,7 +1082,6 @@ int editStudentGrade(int studentId, int gradeId, int subjectId, const StudentGra
         return 1;
     }
 
-    // convert the vector to json
     json studentGrades_json = json::array();
     for (const auto& sg : studentGrades) {
         json studentGrade_json;
@@ -1016,7 +1093,6 @@ int editStudentGrade(int studentId, int gradeId, int subjectId, const StudentGra
         studentGrades_json.push_back(studentGrade_json);
     }
 
-    // write the json back to file
     ofstream output_file(STUDENT_GRADE_FILE);
     if (!output_file.is_open()) {
         cerr << "Could not open file for writing." << endl;
@@ -1025,7 +1101,10 @@ int editStudentGrade(int studentId, int gradeId, int subjectId, const StudentGra
 
     output_file << setw(2) << studentGrades_json << endl;
     output_file.close();
+
+    auto teacherInfo = getTeacherInfo(teacherId);
     cout << "Student grade updated successfully." << endl;
+
     return 0;
 }
 int deleteStudentGrade(int studentId, int gradeId, int subjectId) {
@@ -1072,8 +1151,52 @@ int deleteStudentGrade(int studentId, int gradeId, int subjectId) {
     return 0;
 }
 
+int editStudentGradePrompt() {
+    int studentId, gradeId, subjectId;
+
+    readStudentGrades();
+
+    cout << "Enter student ID: ";
+    cin >> studentId;
+
+    cout << "Enter grade ID: ";
+    cin >> gradeId;
+
+    cout << "Enter subject ID: ";
+    cin >> subjectId;
+    cin.ignore();
+
+    //find grade
+    vector<StudentGrade> studentGrades = getAllStudentGrades();
+    auto it = find_if(studentGrades.begin(), studentGrades.end(),
+        [studentId, gradeId, subjectId](const StudentGrade& sg) {
+            return sg.studentID == studentId && sg.gradeID == gradeId && sg.subjectID == subjectId;
+        });
+
+    if (it == studentGrades.end()) {
+        cout << "Student grade not found." << endl;
+        return 1;
+    }
+
+    StudentGrade updatedStudentGrade = *it;
+
+    // get new values
+    cout << "Enter new grade ID: ";
+    cin >> updatedStudentGrade.gradeID;
+
+    cout << "Enter new subject ID: ";
+    cin >> updatedStudentGrade.subjectID;
+    cin.ignore();
+
+    cout << "Enter new date (MM/DD/YYYY): ";
+    string dateStr;
+    cin >> dateStr;
+    updatedStudentGrade.gradeDate = parseDate(dateStr);
+
+    return editStudentGrade(studentId, gradeId, subjectId, updatedStudentGrade);
+}
+
 //subject actions
-//subjects currently NOT working
 vector<Subject> getAllSubjects() {
     vector<Subject> subjects;
     ifstream input_file(SUBJECT_FILE);
@@ -1246,7 +1369,6 @@ int deleteSubject(int subjectId) {
     return 0;
 }
 
-
 //summaries here..
 //helper functions
 
@@ -1320,12 +1442,13 @@ double calculateAVGSubject(int studentId, int subjectId) {
 bool hasBirthady(const tm& birthDate) {
     time_t now = time(0);
     tm ltm;
-    localtime_s(&ltm, &now);  
+    localtime_s(&ltm, &now);
 
     return (ltm.tm_mon == birthDate.tm_mon &&
         ltm.tm_mday == birthDate.tm_mday);
 }
 
+//average by subject
 int showAverageBySubject() {
     int studentId, subjectId;
     cout << "\n###### Available Students ######" << endl;
@@ -1354,6 +1477,7 @@ int showAverageBySubject() {
     }
     return 0;
 }
+//average in all subjects
 int showAverageOverall() {
     int studentId;
     cout << "\n###### Available Students ######" << endl;
@@ -1375,15 +1499,175 @@ int showAverageOverall() {
     }
     return 0;
 }
+
+//students with an average grade above 5.50
 int showTopStudents() {
+    vector<Student> students = getAllStudents();
+    cout << "\n#### Top Students ####" << endl;
+
+    vector<Student> topStudents;
+    map<int, double> averages;
+
+    //calculates average for all students, may lead to performance issues
+    for (const auto& student : students) {
+        double avg = calculateAVG(student.id); 
+        if (avg >= 5.50) {
+            topStudents.push_back(student);
+            averages[student.id] = avg;
+        }
+    }
+
+    //display results
+    cout << left << setw(10) << "ID"
+        << setw(25) << "Student Name"
+        << setw(10) << "Average" << endl;
+    cout << string(45, '-') << endl;
+
+    for (const auto& student : topStudents) {
+        cout << left << setw(10) << student.id
+            << setw(25) << (student.firstName + " " + student.lastName)
+            << setw(10) << fixed << setprecision(2) << averages[student.id] << endl;
+    }
+
+    if (topStudents.empty()) {
+        cout << "No students found with average grade >= 5.50" << endl;
+    }
+
     return 0;
 }
+
+
+//helper functions
+map<int, int> loadAllGradeValues() {
+    map<int, int> gradeValues;
+    ifstream gradeFile(GRADE_FILE);
+    if (!gradeFile.is_open()) {
+        return gradeValues;
+    }
+
+    try {
+        json gradesJson;
+        gradeFile >> gradesJson;
+        gradeFile.close();
+
+        for (const auto& grade : gradesJson) {
+            if (grade.contains("id") && grade.contains("value")) {
+                gradeValues[grade["id"]] = grade["value"];
+            }
+        }
+    }
+    catch (const exception& e) {
+        cerr << "Error loading grade values: " << e.what() << endl;
+    }
+
+    return gradeValues;
+}
+
 int showMakeupTakers() {
+    const int gradeToFail = 3; 
+
+    cout << "\n##### Students Needing Makeup Exams #####" << endl;
+
+    vector<Student> students = getAllStudents();
+    vector<StudentGrade> allGrades = getAllStudentGrades();
+    map<int, int> gradeValues = loadAllGradeValues();
+
+    //lookup for students by ID (to be fair i dont really understand maps)
+    map<int, string> studentNames;
+    for (const auto& student : students) {
+        studentNames[student.id] = student.firstName + " " + student.lastName;
+    }
+
+    map<int, string> subjectNames;
+    ifstream subjectFile(SUBJECT_FILE);
+    if (subjectFile.is_open()) {
+        json subjectsJson;
+        subjectFile >> subjectsJson;
+        subjectFile.close();
+
+        for (const auto& subject : subjectsJson) {
+            if (subject.contains("id") && subject.contains("name")) {
+                subjectNames[subject["id"]] = subject["name"];
+            }
+        }
+    }
+
+    map<int, set<int>> failedSubjectsByStudent;
+
+    for (const auto& grade : allGrades) {
+        auto valueIt = gradeValues.find(grade.gradeID);
+        if (valueIt != gradeValues.end() && valueIt->second < gradeToFail) {
+            failedSubjectsByStudent[grade.studentID].insert(grade.subjectID);
+        }
+    }
+
+    if (failedSubjectsByStudent.empty()) {
+        cout << "No students need makeup exams." << endl;
+        return 0;
+    }
+
+    //display results
+    cout << left << setw(10) << "ID"
+        << setw(25) << "Student Name"
+        << "Failed Subjects" << endl;
+    cout << string(70, '-') << endl;
+    for (const auto& pair : failedSubjectsByStudent) {
+        int studentId = pair.first;
+        const set<int>& failedSubjects = pair.second;
+
+        // get name
+        string studentName = studentNames.count(studentId) ?
+            studentNames[studentId] : "Unknown Student";
+
+        cout << left << setw(10) << studentId
+            << setw(25) << studentName;
+
+        // failed subjects
+        for (const auto& subjectId : failedSubjects) {
+            string subjectName = subjectNames.count(subjectId) ?
+                subjectNames[subjectId] : "Unknown Subject";
+            cout << subjectName << ", ";
+        }
+        cout << endl;
+    }
+
     return 0;
 }
 int showWeakStudents() {
+    vector<Student> students = getAllStudents();
+    cout << "\n#### Weak Students ####" << endl;
+    
+    //vector to add the weak students
+    vector<Student> weakStudents;
+    map<int, double> averages;
+
+    for (const auto& student : students) {
+        double avg = calculateAVG(student.id); 
+        if (avg > 0 && avg < 3) {  // dont print students with no grades
+            weakStudents.push_back(student);
+            averages[student.id] = avg;
+        }
+    }
+
+    //display results
+    cout << left << setw(10) << "ID"
+        << setw(25) << "Student Name"
+        << setw(10) << "Average" << endl;
+    cout << string(45, '-') << endl;
+
+    for (const auto& student : weakStudents) {
+        cout << left << setw(10) << student.id
+            << setw(25) << (student.firstName + " " + student.lastName)
+            << setw(10) << fixed << setprecision(2) << averages[student.id] << endl; //two digits after floating point 
+    }
+
+    if (weakStudents.empty()) {
+        cout << "No students with average grade below 3.00" << endl;
+    }
+
     return 0;
 }
+
 
 int showBirthdays() {
     vector<Student> students = getAllStudents();
